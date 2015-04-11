@@ -13,7 +13,7 @@
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
 
-import mdp, util
+import mdp, util, copy
 
 from learningAgents import ValueEstimationAgent
 
@@ -45,8 +45,24 @@ class ValueIterationAgent(ValueEstimationAgent):
         self.values = util.Counter() # A Counter is a dict with default 0
 
         # Write value iteration code here
-        "*** YOUR CODE HERE ***"
+        self.computeValues()
 
+    def computeValues(self):
+        states = self.mdp.getStates()
+        i = 0
+        while i < self.iterations:
+          kValues = copy.deepcopy(self.values)
+          for state in states:
+            if not self.mdp.isTerminal(state):
+              bestAction = self.getAction(state)
+              bestValue = self.getQValue(state, bestAction)
+              if bestAction == 'exit':
+                kValues[state] = bestValue
+              else:
+                kValues[state] = self.getValue(state) + self.discount * bestValue
+              kValues[state] = bestValue
+          self.values = kValues
+          i += 1
 
     def getValue(self, state):
         """
@@ -61,7 +77,16 @@ class ValueIterationAgent(ValueEstimationAgent):
           value function stored in self.values.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        Q = 0
+        if not self.mdp.isTerminal(state):
+          if action == 'exit':
+            Q = self.mdp.getReward(state, action, state)
+          else:
+            transitions = self.mdp.getTransitionStatesAndProbs(state, action)
+            for transition in transitions:
+              newState, probability = transition
+              Q += probability * (self.mdp.getReward(state, action, newState) + self.discount * self.getValue(newState))
+        return Q
 
     def computeActionFromValues(self, state):
         """
@@ -73,7 +98,15 @@ class ValueIterationAgent(ValueEstimationAgent):
           terminal state, you should return None.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        if self.mdp.isTerminal(state):
+          return None
+        possibleActions = self.mdp.getPossibleActions(state)
+        values = [self.getQValue(state, action) for action in possibleActions]
+        maxValue = max(values)
+        for index in range(len(values)):
+          if values[index] == maxValue:
+            return possibleActions[index]
+        return None
 
     def getPolicy(self, state):
         return self.computeActionFromValues(state)
@@ -84,3 +117,17 @@ class ValueIterationAgent(ValueEstimationAgent):
 
     def getQValue(self, state, action):
         return self.computeQValueFromValues(state, action)
+
+    def getStateFromAction(self, state, action):
+        x,y = state
+        if (action == "north"):
+          return (x, y+1)
+        if (action == "south"):
+          return (x, y-1)
+        if (action == "west"):
+          return (x-1, y)
+        if (action == "east"):
+          return (x+1, y)
+        if (action == "exit"):
+          return (x,y)
+        raise Exception("Unknown action:" + action)
