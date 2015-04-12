@@ -17,7 +17,7 @@ from game import *
 from learningAgents import ReinforcementAgent
 from featureExtractors import *
 
-import random,util,math
+import random,util,math,copy
 
 class QLearningAgent(ReinforcementAgent):
     """
@@ -120,10 +120,7 @@ class QLearningAgent(ReinforcementAgent):
           it will be called on your behalf
         """
         "*** YOUR CODE HERE ***"
-        if action == 'exit111':
-          self.qValues[(state, action)] = reward
-        else:
-          self.qValues[(state, action)] = (1-self.alpha) * self.getQValue(state, action) + \
+        self.qValues[(state, action)] = (1-self.alpha) * self.getQValue(state, action) + \
                       self.alpha * (reward + self.discount * self.getValue(nextState))
 
     def getPolicy(self, state):
@@ -187,14 +184,31 @@ class ApproximateQAgent(PacmanQAgent):
           where * is the dotProduct operator
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        Q = .0
+        features = self.featExtractor.getFeatures(state, action)
+        for feature, value in features.items():
+          Q += self.weights[feature] * value
+        return Q
 
     def update(self, state, action, nextState, reward):
         """
            Should update your weights based on transition
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        features = self.featExtractor.getFeatures(state, action)
+        weights = copy.deepcopy(self.weights)
+        for feature, value in features.items():
+          difference = (reward + self.discount * self.getValue(nextState)) - self.getQValue(state, action)
+          weights[feature] += self.alpha * difference * value
+        self.weights = weights
+        
+    # def computeMaxQValue(self, state):
+    #     possibleActions = self.getLegalActions(state)
+    #     qValues = [self.getQValue(state, action) for action in possibleActions]
+    #     if len(qValues) == 0:
+    #       return 0.0
+    #     else:
+    #       return max(qValues)
 
     def final(self, state):
         "Called at the end of each game."
